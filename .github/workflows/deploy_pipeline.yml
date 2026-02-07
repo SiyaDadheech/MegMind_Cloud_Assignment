@@ -1,0 +1,60 @@
+name: Deploy AWS Data Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: us-east-1
+      LAMBDA_INITIAL_NAME: initial_data_processor
+      LAMBDA_REPORT_NAME: daily_report_generator
+      LAMBDA_INITIAL_ZIP: lambda_initial.zip
+      LAMBDA_REPORT_ZIP: lambda_report.zip
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.6.7
+
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init
+
+      - name: Terraform Apply
+        working-directory: terraform
+        run: terraform apply -auto-approve
+
+      - name: Package Initial Lambda
+        run: zip -r ${LAMBDA_INITIAL_ZIP} lambda_initial/*
+
+      - name: Package Report Lambda
+        run: zip -r ${LAMBDA_REPORT_ZIP} lambda_report/*
+
+      - name: Deploy Initial Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name ${{ env.LAMBDA_INITIAL_NAME }} \
+            --zip-file fileb://${{ env.LAMBDA_INITIAL_ZIP }}
+
+      - name: Deploy Report Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name ${{ env.LAMBDA_REPORT_NAME }} \
+            --zip-file fileb://${{ env.LAMBDA_REPORT_ZIP }}
