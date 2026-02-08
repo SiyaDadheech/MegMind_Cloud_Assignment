@@ -12,15 +12,13 @@ jobs:
 
     env:
       AWS_REGION: ap-south-1
-      LAMBDA_INITIAL_NAME: initial_data_processor
-      LAMBDA_REPORT_NAME: daily_report_generator
-      LAMBDA_INITIAL_ZIP: lambda_initial.zip
-      LAMBDA_REPORT_ZIP: lambda_report.zip
 
     steps:
-      - name: Checkout Repo
+      # 1️⃣ Checkout code
+      - name: Checkout Repository
         uses: actions/checkout@v3
 
+      # 2️⃣ Configure AWS credentials
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -28,33 +26,31 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      # 3️⃣ Package Initial Lambda (ZIP ROOT MUST CONTAIN .py FILE)
+      - name: Package Initial Lambda
+        run: |
+          cd lambda_initial
+          zip ../lambda_initial.zip lambda_initial.py
+          cd ..
+
+      # 4️⃣ Package Report Lambda
+      - name: Package Report Lambda
+        run: |
+          cd lambda_report
+          zip ../lambda_report.zip lambda_report.py
+          cd ..
+
+      # 5️⃣ Setup Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: latest
 
+      # 6️⃣ Terraform Init
       - name: Terraform Init
         working-directory: terraform
         run: terraform init
 
+      # 7️⃣ Terraform Apply (creates infra + uploads Lambda ZIPs)
       - name: Terraform Apply
         working-directory: terraform
         run: terraform apply -auto-approve
 
-      - name: Package Initial Lambda
-        run: zip -r ${LAMBDA_INITIAL_ZIP} lambda_initial/*
-
-      - name: Package Report Lambda
-        run: zip -r ${LAMBDA_REPORT_ZIP} lambda_report/*
-
-      - name: Deploy Initial Lambda
-        run: |
-          aws lambda update-function-code \
-            --function-name ${{ env.LAMBDA_INITIAL_NAME }} \
-            --zip-file fileb://${{ env.LAMBDA_INITIAL_ZIP }}
-
-      - name: Deploy Report Lambda
-        run: |
-          aws lambda update-function-code \
-            --function-name ${{ env.LAMBDA_REPORT_NAME }} \
-            --zip-file fileb://${{ env.LAMBDA_REPORT_ZIP }}
