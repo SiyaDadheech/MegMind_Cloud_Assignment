@@ -27,6 +27,33 @@ resource "aws_iam_role" "lambda_role" {
   })
 }
 
+
+#IAM Role for SES 
+# IAM Policy to allow Lambda to send emails via SES
+resource "aws_iam_policy" "ses_send_email" {
+  name   = "LambdaSESSendEmailPolicy"
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect   = "Allow",
+        Action   = [
+          "ses:SendEmail",
+          "ses:SendRawEmail"
+        ],
+        Resource = "arn:aws:ses:ap-south-1:650251724323:identity/siyadadheech175@gmail.com"
+      }
+    ]
+  })
+}
+
+# Attach the SES policy to Lambda role
+resource "aws_iam_role_policy_attachment" "lambda_ses" {
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = aws_iam_policy.ses_send_email.arn
+}
+
+
 resource "aws_iam_role_policy_attachment" "lambda_s3" {
   role       = aws_iam_role.lambda_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
