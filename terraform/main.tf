@@ -92,7 +92,7 @@ resource "aws_s3_bucket_notification" "raw_bucket_notification" {
 # EventBridge Rule for daily report
 resource "aws_cloudwatch_event_rule" "daily_trigger" {
   name                = "daily-report-trigger"
-  schedule_expression = "cron(0 0 * * ? *)"
+  schedule_expression = "cron(* * * * ? *)"
 }
 
 resource "aws_cloudwatch_event_target" "invoke_report_lambda" {
