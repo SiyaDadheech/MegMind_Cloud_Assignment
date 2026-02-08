@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      AWS_REGION: us-east-1
+      AWS_REGION: ap-south-1
       LAMBDA_INITIAL_NAME: initial_data_processor
       LAMBDA_REPORT_NAME: daily_report_generator
       LAMBDA_INITIAL_ZIP: lambda_initial.zip
